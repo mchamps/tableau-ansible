@@ -51,7 +51,7 @@
   - name: Listing contents of logs folder...
     win_shell: dir
     args:
-      chdir: "{{ result_3_logs_folder.stdoutlines[0] }}"
+      chdir: "{{ result_3_logs_folder.stdout_lines[0] }}"
     register: result_9_listlogs
 
   - name: Sending E-Mail on end of installation...
