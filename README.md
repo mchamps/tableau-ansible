@@ -1,2 +1,2 @@
 # tableau-ansible
-Repository for Ansible Playboks for adminstrating Tableau Server
+Repository for Ansible Playboks for administrating Tableau Server deployments
