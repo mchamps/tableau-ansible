@@ -65,8 +65,8 @@
 <p>*****RESULTS OF tsm maintenance ziplogs*****<br><br>{{ result_5_ziplogs.stdout }}</p>
 <p>*****RESULTS OF tsm maintenance cleanup*****<br><br>{{ result_6_cleanup.stdout }}</p>
 <p>*****RESULTS OF tsm maintenance backup*****<br><br>{{ result_7_backup.stdout }}</p>
-<p>*****Contents of {{ result_2_backup_folder.stdout_lines[0] }}<br><br>{{ result_8_listbackups.stdout_lines }}*****</p>
-<p>*****Contents of {{ result_3_logs_folder.stdout_lines[0] }}<br><br>{{ result_9_listlogs.stdout_lines }} *****</p>
+<p>*****Contents of {{ result_2_backup_folder.stdout_lines[0] }}<br><br>{{ result_8_listbackups.stdout_lines }}</p>
+<p>*****Contents of {{ result_3_logs_folder.stdout_lines[0] }}<br><br>{{ result_9_listlogs.stdout_lines }}</p>
 '
       from: email@gmail.com
       to:
