@@ -1,0 +1,70 @@
+---
+# Tableau Server Backup Playbook
+# ==============================
+# This playbook performs a complete backup and maintenance cycle for Tableau Server.
+#
+# Usage:
+#   ansible-playbook playbooks/tableau_backup.yml
+#
+# With specific inventory:
+#   ansible-playbook -i inventory/production/hosts playbooks/tableau_backup.yml
+#
+# With vault password:
+#   ansible-playbook playbooks/tableau_backup.yml --ask-vault-pass
+#
+# Dry run (check mode):
+#   ansible-playbook playbooks/tableau_backup.yml --check
+#
+# Verbose output:
+#   ansible-playbook playbooks/tableau_backup.yml -vvv
+
+- name: Tableau Server Backup and Maintenance
+  hosts: tableau_servers
+  gather_facts: true
+
+  vars_files:
+    - ../inventory/production/group_vars/tableau_servers.yml
+
+  pre_tasks:
+    - name: Display playbook start information
+      ansible.builtin.debug:
+        msg:
+          - "Starting Tableau backup on {{ ansible_hostname }}"
+          - "Timestamp: {{ ansible_date_time.iso8601 }}"
+          - "Backup retention: {{ backup_retention_days }} days"
+          - "Log retention: {{ log_retention_days }} days"
+
+    - name: Verify TSM is accessible
+      ansible.windows.win_shell: tsm status
+      register: tsm_status
+      changed_when: false
+      failed_when: false
+
+    - name: Display TSM status
+      ansible.builtin.debug:
+        var: tsm_status.stdout_lines
+      when: tsm_status.stdout_lines is defined
+
+  roles:
+    - role: tableau_backup
+      tags:
+        - backup
+        - tsm
+
+    - role: tableau_cleanup
+      tags:
+        - cleanup
+        - maintenance
+
+    - role: email_notification
+      tags:
+        - notification
+        - email
+
+  post_tasks:
+    - name: Display completion summary
+      ansible.builtin.debug:
+        msg:
+          - "Tableau backup completed successfully!"
+          - "Host: {{ ansible_hostname }}"
+          - "Completed at: {{ ansible_date_time.iso8601 }}"

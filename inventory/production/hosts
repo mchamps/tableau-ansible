@@ -1,0 +1,16 @@
+# Tableau Server Production Inventory
+# ==================================
+# Define your Tableau Server hosts here
+
+[tableau_servers]
+# Primary TSM node - update with your actual hostname/IP
+tsm_primary ansible_host=YOUR_TABLEAU_SERVER_HOSTNAME
+
+[tableau_servers:vars]
+# Windows connection settings
+ansible_connection=winrm
+ansible_winrm_transport=ntlm
+ansible_winrm_server_cert_validation=ignore
+ansible_port=5986
+
+# NOTE: Set credentials in group_vars/tableau_servers.yml or use Ansible Vault

@@ -1,0 +1,105 @@
+---
+# Tableau Server Restore Playbook
+# ================================
+# This playbook restores Tableau Server from a backup file.
+#
+# IMPORTANT: This playbook will stop Tableau Server during restore!
+#
+# Usage:
+#   ansible-playbook playbooks/tableau_restore.yml -e "backup_file=ts_backup_20240101.tsbak"
+#
+# Required variables:
+#   - backup_file: Name of the backup file to restore (without path)
+
+- name: Tableau Server Restore
+  hosts: tableau_servers
+  gather_facts: true
+
+  vars_files:
+    - ../inventory/production/group_vars/tableau_servers.yml
+
+  vars:
+    # Override this with -e "backup_file=filename.tsbak"
+    backup_file: ""
+
+  pre_tasks:
+    - name: Validate backup_file variable
+      ansible.builtin.assert:
+        that:
+          - backup_file is defined
+          - backup_file | length > 0
+        fail_msg: "You must specify a backup file using -e 'backup_file=filename.tsbak'"
+
+    - name: Confirm restore operation
+      ansible.builtin.pause:
+        prompt: |
+          WARNING: You are about to restore Tableau Server from backup.
+          This will STOP the server and may result in data loss.
+
+          Backup file: {{ backup_file }}
+          Target host: {{ ansible_hostname }}
+
+          Type 'yes' to continue or Ctrl+C to abort
+
+    - name: Login to TSM
+      ansible.windows.win_shell: |
+        tsm login -s {{ tsm_server }} -u {{ tsm_username }} -p '{{ tsm_password }}'
+      no_log: true
+      changed_when: false
+
+    - name: Get backup folder path
+      ansible.windows.win_shell: tsm configuration get -k basefilepath.backuprestore
+      register: backup_folder_result
+      changed_when: false
+
+    - name: Set backup folder path fact
+      ansible.builtin.set_fact:
+        backup_folder_path: "{{ backup_folder_result.stdout_lines[0] | trim }}"
+
+    - name: Verify backup file exists
+      ansible.windows.win_stat:
+        path: "{{ backup_folder_path }}\\{{ backup_file }}"
+      register: backup_file_stat
+
+    - name: Fail if backup file does not exist
+      ansible.builtin.fail:
+        msg: "Backup file not found: {{ backup_folder_path }}\\{{ backup_file }}"
+      when: not backup_file_stat.stat.exists
+
+  tasks:
+    - name: Stop Tableau Server
+      ansible.windows.win_shell: tsm stop
+      register: stop_result
+
+    - name: Wait for server to stop
+      ansible.windows.win_shell: tsm status
+      register: status_result
+      until: "'STOPPED' in status_result.stdout"
+      retries: 30
+      delay: 10
+      changed_when: false
+
+    - name: Restore from backup
+      ansible.windows.win_shell: |
+        tsm maintenance restore -f "{{ backup_file }}"
+      register: restore_result
+
+    - name: Start Tableau Server
+      ansible.windows.win_shell: tsm start
+      register: start_result
+
+    - name: Wait for server to start
+      ansible.windows.win_shell: tsm status
+      register: status_result
+      until: "'RUNNING' in status_result.stdout"
+      retries: 60
+      delay: 10
+      changed_when: false
+
+  post_tasks:
+    - name: Display restore completion
+      ansible.builtin.debug:
+        msg:
+          - "Tableau Server restore completed!"
+          - "Restored from: {{ backup_file }}"
+          - "Server status: Running"

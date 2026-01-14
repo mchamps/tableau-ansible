@@ -1,0 +1,59 @@
+---
+# Tableau Server Group Variables
+# ==============================
+# This file contains variables for all Tableau servers in this environment.
+# SECURITY: Use Ansible Vault to encrypt sensitive values.
+#
+# To encrypt this file:
+#   ansible-vault encrypt inventory/production/group_vars/tableau_servers.yml
+#
+# To edit encrypted file:
+#   ansible-vault edit inventory/production/group_vars/tableau_servers.yml
+
+# -----------------------------------------------------------------------------
+# TSM Authentication (ENCRYPT THESE VALUES WITH ANSIBLE VAULT)
+# -----------------------------------------------------------------------------
+tsm_username: "{{ vault_tsm_username }}"
+tsm_password: "{{ vault_tsm_password }}"
+tsm_server: "localhost"
+
+# -----------------------------------------------------------------------------
+# Backup Configuration
+# -----------------------------------------------------------------------------
+backup_retention_days: 4
+backup_filename_prefix: "ts_backup"
+
+# Log archiving
+log_retention_days: 4
+log_filename_prefix: "logs"
+
+# Settings export
+export_server_settings: true
+
+# -----------------------------------------------------------------------------
+# Maintenance Options
+# -----------------------------------------------------------------------------
+maintenance_cleanup:
+  logs: true          # -l flag: Clean up logs
+  temp_files: true    # -t flag: Clean up temp files
+  redis_cache: true   # -r flag: Clear Redis cache
+  quiet_mode: true    # -q flag: Quiet mode
+
+# -----------------------------------------------------------------------------
+# Email Notification Settings (ENCRYPT SMTP PASSWORD IF REQUIRED)
+# -----------------------------------------------------------------------------
+email_notification:
+  enabled: true
+  smtp_host: "{{ vault_smtp_host | default('smtp.example.com') }}"
+  smtp_port: 25
+  smtp_use_tls: false
+  from_address: "{{ vault_email_from | default('tableau-backup@example.com') }}"
+  to_addresses:
+    - "admin@example.com"
+  subject_prefix: "ANSIBLE | Tableau Backup"
+
+# -----------------------------------------------------------------------------
+# Windows Connection Settings
+# -----------------------------------------------------------------------------
+ansible_user: "{{ vault_ansible_user }}"
+ansible_password: "{{ vault_ansible_password }}"

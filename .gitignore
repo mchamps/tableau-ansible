@@ -1,0 +1,49 @@
+# Ansible runtime files
+*.retry
+.ansible-facts/
+.ansible-retry/
+logs/
+
+# Sensitive files - NEVER commit these
+**/vault_password.txt
+**/*.vault.yml
+**/secrets.yml
+**/*_secrets.yml
+**/.vault_pass
+
+# Environment-specific overrides
+*.local.yml
+
+# Editor files
+*.swp
+*.swo
+*~
+.vscode/
+.idea/
+*.sublime-*
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Temporary files
+*.tmp
+*.bak
+*.backup
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+.Python
+venv/
+.env
+
+# Test output
+.tox/
+.pytest_cache/
+htmlcov/
+.coverage
+
+# Log files
+*.log

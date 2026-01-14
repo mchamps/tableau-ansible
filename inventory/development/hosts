@@ -1,0 +1,13 @@
+# Tableau Server Development/Test Inventory
+# ==========================================
+# Use this inventory for testing playbooks in non-production environments
+
+[tableau_servers]
+# Development/Test TSM node
+tsm_dev ansible_host=YOUR_DEV_TABLEAU_SERVER
+
+[tableau_servers:vars]
+ansible_connection=winrm
+ansible_winrm_transport=ntlm
+ansible_winrm_server_cert_validation=ignore
+ansible_port=5986
