@@ -1,0 +1,74 @@
+---
+# Tableau Cleanup Role - Main Tasks
+# ==================================
+# This role handles cleanup of old backup and log files
+
+- name: Validate required variables
+  ansible.builtin.assert:
+    that:
+      - backup_folder_path is defined
+      - log_folder_path is defined
+    fail_msg: "Folder paths must be defined. Run tableau_backup role first or set backup_folder_path and log_folder_path."
+    quiet: true
+
+- name: Delete old backup files (older than {{ backup_retention_days }} days)
+  ansible.windows.win_shell: |
+    $cutoffDate = (Get-Date).AddDays(-{{ backup_retention_days }})
+    $deletedFiles = Get-ChildItem -Path "{{ backup_folder_path }}" -Filter "{{ backup_file_pattern }}" -Recurse |
+      Where-Object { $_.LastWriteTime -lt $cutoffDate } |
+      ForEach-Object {
+        $_.FullName
+        Remove-Item $_.FullName -Force
+      }
+    if ($deletedFiles) {
+      Write-Output "Deleted files:"
+      $deletedFiles
+    } else {
+      Write-Output "No files older than {{ backup_retention_days }} days found."
+    }
+  register: backup_cleanup_result
+  when: cleanup_old_backups | bool
+  changed_when: "'Deleted files:' in backup_cleanup_result.stdout"
+
+- name: Delete old log archives (older than {{ log_retention_days }} days)
+  ansible.windows.win_shell: |
+    $cutoffDate = (Get-Date).AddDays(-{{ log_retention_days }})
+    $deletedFiles = Get-ChildItem -Path "{{ log_folder_path }}" -Filter "{{ log_file_pattern }}" -Recurse |
+      Where-Object { $_.LastWriteTime -lt $cutoffDate } |
+      ForEach-Object {
+        $_.FullName
+        Remove-Item $_.FullName -Force
+      }
+    if ($deletedFiles) {
+      Write-Output "Deleted files:"
+      $deletedFiles
+    } else {
+      Write-Output "No files older than {{ log_retention_days }} days found."
+    }
+  register: log_cleanup_result
+  when: cleanup_old_logs | bool
+  changed_when: "'Deleted files:' in log_cleanup_result.stdout"
+
+- name: List contents of backup folder
+  ansible.windows.win_shell: |
+    Get-ChildItem -Path "{{ backup_folder_path }}" |
+      Select-Object Name, Length, LastWriteTime |
+      Format-Table -AutoSize
+  register: backup_folder_contents
+  changed_when: false
+
+- name: List contents of log folder
+  ansible.windows.win_shell: |
+    Get-ChildItem -Path "{{ log_folder_path }}" |
+      Select-Object Name, Length, LastWriteTime |
+      Format-Table -AutoSize
+  register: log_folder_contents
+  changed_when: false
+
+- name: Store cleanup results for notification
+  ansible.builtin.set_fact:
+    tableau_cleanup_results:
+      backup_cleanup: "{{ backup_cleanup_result.stdout | default('Skipped') }}"
+      log_cleanup: "{{ log_cleanup_result.stdout | default('Skipped') }}"
+      backup_folder_contents: "{{ backup_folder_contents.stdout_lines | default([]) }}"
+      log_folder_contents: "{{ log_folder_contents.stdout_lines | default([]) }}"

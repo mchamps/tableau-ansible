@@ -1,0 +1,28 @@
+---
+# Email Notification Role - Main Tasks
+# =====================================
+# This role sends email notifications with backup results
+
+- name: Check if email notifications are enabled
+  ansible.builtin.debug:
+    msg: "Email notifications are disabled. Skipping."
+  when: not (email_notification.enabled | default(true) | bool)
+
+- name: Prepare email body from template
+  ansible.builtin.set_fact:
+    email_body: "{{ lookup('template', 'email_report.html.j2') }}"
+  when: email_notification.enabled | default(true) | bool
+
+- name: Send backup completion email
+  community.general.mail:
+    host: "{{ email_notification.smtp_host }}"
+    port: "{{ email_notification.smtp_port | default(25) }}"
+    secure: "{{ 'starttls' if email_notification.smtp_use_tls | default(false) else 'never' }}"
+    from: "{{ email_notification.from_address }}"
+    to: "{{ email_notification.to_addresses }}"
+    subject: "{{ email_notification.subject_prefix }} - Backup completed at {{ ansible_date_time.iso8601_basic_short }}"
+    subtype: html
+    body: "{{ email_body }}"
+  delegate_to: localhost
+  ignore_errors: "{{ email_ignore_errors | default(true) }}"
+  when: email_notification.enabled | default(true) | bool

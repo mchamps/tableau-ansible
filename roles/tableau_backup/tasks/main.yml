@@ -1,0 +1,84 @@
+---
+# Tableau Backup Role - Main Tasks
+# =================================
+# This role handles TSM login, backup, and maintenance operations
+
+- name: Validate required variables
+  ansible.builtin.assert:
+    that:
+      - tsm_username is defined and tsm_username | length > 0
+      - tsm_password is defined and tsm_password | length > 0
+    fail_msg: "TSM credentials must be defined. Please set tsm_username and tsm_password."
+    quiet: true
+
+- name: Login to TSM
+  ansible.windows.win_shell: |
+    tsm login -s {{ tsm_server }} -u {{ tsm_username }} -p '{{ tsm_password }}'
+  register: tsm_login_result
+  no_log: true
+  changed_when: false
+
+- name: Get backup folder location from TSM configuration
+  ansible.windows.win_shell: tsm configuration get -k basefilepath.backuprestore
+  register: backup_folder_result
+  changed_when: false
+
+- name: Set backup folder path fact
+  ansible.builtin.set_fact:
+    backup_folder_path: "{{ backup_folder_result.stdout_lines[0] | trim }}"
+
+- name: Get log archive folder location from TSM configuration
+  ansible.windows.win_shell: tsm configuration get -k basefilepath.log_archive
+  register: log_folder_result
+  changed_when: false
+
+- name: Set log folder path fact
+  ansible.builtin.set_fact:
+    log_folder_path: "{{ log_folder_result.stdout_lines[0] | trim }}"
+
+- name: Display folder paths
+  ansible.builtin.debug:
+    msg:
+      - "Backup folder: {{ backup_folder_path }}"
+      - "Log archive folder: {{ log_folder_path }}"
+
+- name: Export ServerSettings.json
+  ansible.windows.win_shell: >-
+    tsm settings export -f "{{ backup_folder_path }}\ServerSettings_{{ ansible_date_time.iso8601_basic_short }}.json"
+  register: settings_export_result
+  when: export_server_settings | bool
+
+- name: Run TSM maintenance ziplogs
+  ansible.windows.win_shell: >-
+    tsm maintenance ziplogs -a -f {{ log_filename_prefix }}_{{ ansible_date_time.iso8601_basic_short }}.zip
+  register: ziplogs_result
+  when: run_maintenance_ziplogs | bool
+
+- name: Build cleanup flags
+  ansible.builtin.set_fact:
+    cleanup_flags: >-
+      {{ '-l' if maintenance_cleanup.logs | default(true) else '' }}
+      {{ '-t' if maintenance_cleanup.temp_files | default(true) else '' }}
+      {{ '-r' if maintenance_cleanup.redis_cache | default(true) else '' }}
+      {{ '-q' if maintenance_cleanup.quiet_mode | default(true) else '' }}
+
+- name: Run TSM maintenance cleanup
+  ansible.windows.win_shell: "tsm maintenance cleanup {{ cleanup_flags | trim }}"
+  register: cleanup_result
+  when: run_maintenance_cleanup | bool
+
+- name: Run TSM maintenance backup
+  ansible.windows.win_shell: >-
+    tsm maintenance backup -f {{ backup_filename_prefix }}_{{ ansible_date_time.iso8601_basic_short }}
+  register: backup_result
+  when: run_maintenance_backup | bool
+
+- name: Store backup results for notification
+  ansible.builtin.set_fact:
+    tableau_backup_results:
+      settings_export: "{{ settings_export_result.stdout | default('Skipped') }}"
+      ziplogs: "{{ ziplogs_result.stdout | default('Skipped') }}"
+      cleanup: "{{ cleanup_result.stdout | default('Skipped') }}"
+      backup: "{{ backup_result.stdout | default('Skipped') }}"
+      backup_folder: "{{ backup_folder_path }}"
+      log_folder: "{{ log_folder_path }}"

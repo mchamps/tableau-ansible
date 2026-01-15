@@ -1,0 +1,21 @@
+---
+# Vault Variables Template
+# ========================
+# Copy this file to vault.yml and encrypt it with Ansible Vault:
+#   cp vault.yml.example vault.yml
+#   ansible-vault encrypt vault.yml
+#
+# These variables contain sensitive credentials that should NEVER be committed
+# to version control in plain text.
+
+# TSM Credentials
+vault_tsm_username: "your_tsm_username"
+vault_tsm_password: "your_tsm_password"
+
+# Windows/WinRM Credentials
+vault_ansible_user: "your_windows_user"
+vault_ansible_password: "your_windows_password"
+
+# Email/SMTP Settings
+vault_smtp_host: "smtp.example.com"
+vault_email_from: "tableau-backup@example.com"

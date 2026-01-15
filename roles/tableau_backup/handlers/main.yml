@@ -1,0 +1,15 @@
+---
+# Handlers for tableau_backup role
+# =================================
+
+- name: Restart Tableau Server
+  ansible.windows.win_shell: tsm restart
+  listen: "restart tableau"
+
+- name: Stop Tableau Server
+  ansible.windows.win_shell: tsm stop
+  listen: "stop tableau"
+
+- name: Start Tableau Server
+  ansible.windows.win_shell: tsm start
+  listen: "start tableau"

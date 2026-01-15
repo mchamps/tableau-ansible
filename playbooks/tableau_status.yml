@@ -1,0 +1,62 @@
+---
+# Tableau Server Status Playbook
+# ==============================
+# A simple playbook to check Tableau Server status and configuration.
+#
+# Usage:
+#   ansible-playbook playbooks/tableau_status.yml
+
+- name: Check Tableau Server Status
+  hosts: tableau_servers
+  gather_facts: true
+
+  vars_files:
+    - ../inventory/production/group_vars/tableau_servers.yml
+
+  tasks:
+    - name: Login to TSM
+      ansible.windows.win_shell: |
+        tsm login -s {{ tsm_server }} -u {{ tsm_username }} -p '{{ tsm_password }}'
+      no_log: true
+      changed_when: false
+
+    - name: Get TSM status
+      ansible.windows.win_shell: tsm status -v
+      register: tsm_status
+      changed_when: false
+
+    - name: Get backup folder path
+      ansible.windows.win_shell: tsm configuration get -k basefilepath.backuprestore
+      register: backup_path
+      changed_when: false
+
+    - name: Get log archive folder path
+      ansible.windows.win_shell: tsm configuration get -k basefilepath.log_archive
+      register: log_path
+      changed_when: false
+
+    - name: List backup files
+      ansible.windows.win_shell: |
+        Get-ChildItem -Path "{{ backup_path.stdout_lines[0] | trim }}" -Filter "*.tsbak" |
+          Sort-Object LastWriteTime -Descending |
+          Select-Object Name, @{N='Size(MB)';E={[math]::Round($_.Length/1MB,2)}}, LastWriteTime |
+          Format-Table -AutoSize
+      register: backup_files
+      changed_when: false
+
+    - name: Display server information
+      ansible.builtin.debug:
+        msg:
+          - "====== Tableau Server Status ======"
+          - "Hostname: {{ ansible_hostname }}"
+          - "Check time: {{ ansible_date_time.iso8601 }}"
+          - ""
+          - "====== TSM Status ======"
+          - "{{ tsm_status.stdout }}"
+          - ""
+          - "====== Paths ======"
+          - "Backup folder: {{ backup_path.stdout_lines[0] | trim }}"
+          - "Log archive folder: {{ log_path.stdout_lines[0] | trim }}"
+          - ""
+          - "====== Available Backups ======"
+          - "{{ backup_files.stdout }}"

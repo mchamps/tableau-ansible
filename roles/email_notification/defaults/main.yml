@@ -1,0 +1,16 @@
+---
+# Default variables for email_notification role
+# =============================================
+
+email_notification:
+  enabled: true
+  smtp_host: "localhost"
+  smtp_port: 25
+  smtp_use_tls: false
+  from_address: "ansible@localhost"
+  to_addresses:
+    - "admin@localhost"
+  subject_prefix: "ANSIBLE | Tableau"
+
+# Whether to continue on email errors
+email_ignore_errors: true

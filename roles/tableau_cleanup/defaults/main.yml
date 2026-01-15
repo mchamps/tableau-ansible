@@ -1,0 +1,15 @@
+---
+# Default variables for tableau_cleanup role
+# ==========================================
+
+# Retention settings (in days)
+backup_retention_days: 4
+log_retention_days: 4
+
+# Cleanup options
+cleanup_old_backups: true
+cleanup_old_logs: true
+
+# File patterns to clean
+backup_file_pattern: "*.tsbak"
+log_file_pattern: "*.zip"

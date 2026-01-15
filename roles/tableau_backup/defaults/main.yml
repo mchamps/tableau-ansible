@@ -1,0 +1,32 @@
+---
+# Default variables for tableau_backup role
+# =========================================
+# These can be overridden in inventory group_vars or playbook vars
+
+# TSM Authentication
+tsm_server: "localhost"
+tsm_username: ""
+tsm_password: ""
+
+# Backup settings
+backup_filename_prefix: "ts_backup"
+backup_retention_days: 4
+
+# Log archiving
+log_filename_prefix: "logs"
+log_retention_days: 4
+
+# Server settings export
+export_server_settings: true
+
+# Maintenance options
+maintenance_cleanup:
+  logs: true
+  temp_files: true
+  redis_cache: true
+  quiet_mode: true
+
+# Maintenance tasks to run
+run_maintenance_cleanup: true
+run_maintenance_ziplogs: true
+run_maintenance_backup: true
